@@ -23,6 +23,7 @@ PORT = int(os.getenv('PORT', '8000'))
 
 # Initialize Twilio client
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+RENDER_URL = "https://oai-twilio-sample.onrender.com"
 
 # OpenAI Configuration
 VOICE = 'alloy'
@@ -131,7 +132,7 @@ async def handle_incoming_call(request: Request):
 @app.api_route("/ai-agent", methods=["GET", "POST"])
 async def ai_agent(request: Request):
     response = VoiceResponse()
-    response.start().stream(url="https://0398-64-136-145-105.ngrok-free.app/stream") #conference ngrok
+    response.start().stream(url=f"{RENDER_URL}/stream") #conference ngrok
     dial = Dial()
     dial.conference(
         'My conference',
@@ -220,7 +221,7 @@ async def send_session_update(openai_ws):
 
 async def initiate_ai_agent_call():
     call = client.calls.create(
-        url='https://0398-64-136-145-105.ngrok-free.app/ai-agent', # ai ngrok
+        url=f"{RENDER_URL}/ai-agent", # ai ngrok
         to=AI_AGENT_NUMBER,
         from_=TWILIO_NUMBER
     )
