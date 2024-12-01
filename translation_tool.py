@@ -9,6 +9,7 @@ from fastapi.websockets import WebSocketDisconnect
 from twilio.twiml.voice_response import VoiceResponse, Connect, Say, Stream, Dial, Conference
 from twilio.rest import Client
 from dotenv import load_dotenv
+from typing import List
 
 load_dotenv()
 
@@ -17,13 +18,16 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_NUMBER = os.getenv('TWILIO_NUMBER')
-MODERATOR = os.getenv('MODERATOR_NUMBER')
+#MODERATOR = os.getenv('MODERATOR_NUMBER')
 AI_AGENT_NUMBER = os.getenv('AI_AGENT_NUMBER')
 PORT = int(os.getenv('PORT', '8000'))
 
 # Initialize Twilio client
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 RENDER_URL = os.getenv('RENDER_URL')
+
+MODERATORS: List[str] = os.getenv('MODERATOR_NUMBERS', '').split(',')
+MODERATORS = [num.strip() for num in MODERATORS if num.strip()]
 
 # OpenAI Configuration
 VOICE = 'alloy'
@@ -66,12 +70,12 @@ async def call(request: Request):
     from_number = query_params.get('From')
     
     print(f"Caller number: {from_number}")
-    print(f"Expected moderator: {MODERATOR}")
+    print(f"Expected moderators: {MODERATORS}")
     
     response = VoiceResponse()
     
-    if from_number == MODERATOR:
-        print("Moderator joined")
+    if from_number in MODERATORS:
+        print(f"Moderator {from_number} joined")
         dial = Dial()
         dial.conference(
             'My conference',
