@@ -58,6 +58,12 @@ app = FastAPI()
 if not OPENAI_API_KEY:
     raise ValueError('Missing the OpenAI API key. Please set it in the .env file.')
 
+# Store conference state
+conference_status = {
+    'is_active': False,
+    'agent_dialed': False
+}
+
 # Root endpoint
 @app.get("/", response_class=JSONResponse)
 async def index_page():
@@ -71,23 +77,40 @@ async def call(request: Request):
     
     print(f"Caller number: {from_number}")
     print(f"Expected moderators: {MODERATORS}")
+    print(f"Conference status: Active={conference_status['is_active']}, Agent dialed={conference_status['agent_dialed']}")
     
     response = VoiceResponse()
     
     if from_number in MODERATORS:
         print(f"Moderator {from_number} joined")
         dial = Dial()
-        dial.conference(
-            'My conference',
-            start_conference_on_enter=True,
-            end_conference_on_exit=True,
-            status_callback=f"https://{request.base_url.hostname}/status"
-        )
-        response.append(dial)
         
-        print("Dialing Agent")
-        await initiate_ai_agent_call() 
-        print("Agent Connected")     
+        # Only set start_conference_on_enter and dial agent if this is the first moderator
+        if not conference_status['is_active']:
+            conference_status['is_active'] = True
+            dial.conference(
+                'My conference',
+                start_conference_on_enter=True,
+                end_conference_on_exit=True,
+                status_callback=f"https://{request.base_url.hostname}/status"
+            )
+            response.append(dial)
+            
+            if not conference_status['agent_dialed']:
+                print("Dialing Agent")
+                await initiate_ai_agent_call()
+                conference_status['agent_dialed'] = True
+                print("Agent Connected")
+        else:
+            # Subsequent moderators join as regular participants but with moderator privileges
+            dial.conference(
+                'My conference',
+                start_conference_on_enter=False,  # Conference already started
+                end_conference_on_exit=True,  # Still give them power to end the conference
+                status_callback=f"https://{request.base_url.hostname}/status"
+            )
+            response.append(dial)
+            print(f"Additional moderator joined existing conference")
     else:
         print(f"Regular participant joined")
         dial = Dial()
@@ -111,12 +134,14 @@ async def wait():
 async def status_callback(request: Request):
     form_data = await request.form()
     status_data = dict(form_data)
-    conference_status = status_data.get('ConferenceStatus')
+    conference_status_twilio = status_data.get('ConferenceStatus')
     
     print(f"Conference Status Update: {status_data}")
     
-    if conference_status == 'completed':
-        print("Conference ended")
+    if conference_status_twilio == 'completed':
+        conference_status['is_active'] = False
+        conference_status['agent_dialed'] = False
+        print("Conference ended, reset status")
     
     return Response(content="OK")
 
