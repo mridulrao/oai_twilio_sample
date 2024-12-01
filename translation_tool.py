@@ -23,7 +23,7 @@ PORT = int(os.getenv('PORT', '8000'))
 
 # Initialize Twilio client
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-RENDER_URL = "https://oai-twilio-sample.onrender.com"
+RENDER_URL = os.getenv('RENDER_URL')
 
 # OpenAI Configuration
 VOICE = 'alloy'
