@@ -4,7 +4,7 @@ services:
     env: python
     region: oregon  # You can change this to your preferred region
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn translation_tool:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn translation_tool_v2:app --host 0.0.0.0 --port $PORT
     plan: free  # Change to other plans like 'starter' or 'standard' as needed
     
     # Auto-deploy changes
